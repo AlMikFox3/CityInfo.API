@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using CityInfo.API.Models;
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,7 +21,7 @@ namespace CityInfo.API.Controllers
             return Ok(city_ret.PointsOfInterest);
    
         }
-        [HttpGet("{cid}/pointsofinterest/{pid}")]
+        [HttpGet("{cid}/pointsofinterest/{pid}", Name = "GetPointOfInterest")]
         public IActionResult GetPointOfInterest(int cid, int pid)
         {
             var city = CityDataStore.Current.Cities.FirstOrDefault(c => c.Id == cid);
@@ -30,6 +31,25 @@ namespace CityInfo.API.Controllers
             if (PointsOfInt == null)
                 return NotFound();
             return Ok(PointsOfInt);
+        }
+
+        [HttpPost("{cityid}/pointsofinterest")]
+        public IActionResult CreatePointOfInterest(int cityid, [FromBody] PointOfInterestCreationDto pointofInterest)
+        {
+            if (pointofInterest == null)
+                return BadRequest();
+            var city = CityDataStore.Current.Cities.FirstOrDefault(c => c.Id == cityid);
+            if (city == null)
+                return NotFound();
+            var maxPOI = CityDataStore.Current.Cities.SelectMany(c => c.PointsOfInterest).Max(p => p.Id);
+            var finalPOI = new PointOfInterestDto()
+            {
+                Id = ++maxPOI,
+                Name = pointofInterest.Name,
+                Description = pointofInterest.Description,
+            };
+            city.PointsOfInterest.Add(finalPOI);
+            return CreatedAtRoute("GetPointofInterest", new { cid = cityid, pid = finalPOI.Id }, finalPOI);
         }
     }
 }
